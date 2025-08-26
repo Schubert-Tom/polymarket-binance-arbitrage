@@ -6,12 +6,15 @@ getcontext().prec = 28
 
 class OrderBook:
     """
-    Simple OrderBook wrapper for Binance eOptions (or similar exchanges).
-    Stores bids and asks sorted by price.
+    Simple OrderBook all quantities are in USD
     """
 
-    def __init__(self, symbol: str, data: Dict[str, Any]):
-        self.symbol = symbol
+    def __init__(self, quantity_currency, qty_step_size:float, min_qty_to_purchase: float):
+        self.quantity_currency = quantity_currency
+        self.qty_step_size = qty_step_size
+        self.min_qty_to_purchase = min_qty_to_purchase
+
+    def updateData(self, data: Dict[str, Any], qty_step_size: float = None, min_qty_to_purchase: float = None):
         # Binance returns price/qty as strings, convert to floats
         self.bids: List[Tuple[float, float]] = sorted(
             [(float(p), float(q)) for p, q in data.get("bids", [])],
@@ -21,6 +24,11 @@ class OrderBook:
             [(float(p), float(q)) for p, q in data.get("asks", [])],
             key=lambda x: x[0]   # lowest first
         )
+        if qty_step_size is not None:
+            self.qty_step_size = qty_step_size
+
+        if min_qty_to_purchase is not None:
+            self.min_qty_to_purchase = min_qty_to_purchase
 
     def best_bid(self) -> Optional[Tuple[float, float]]:
         """Return (price, qty) of best bid or None if empty."""
@@ -53,7 +61,7 @@ class OrderBook:
     def calculate_instant_buy_price_and_size(
         self,
         amount_of_money: float,
-        order_type: str = "FAK",  # "FAK" (partial allowed) or "FOK" (all-or-nothing for the given cash)
+        order_type: str = "FOK",  # "FAK" (partial allowed) or "FOK" (all-or-nothing for the given cash)
     ) -> Tuple[Optional[float], Optional[float]]:
         """
         Consume the ask side from best to worst to see how much you can buy

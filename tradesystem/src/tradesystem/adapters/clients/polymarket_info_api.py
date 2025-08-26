@@ -2,23 +2,6 @@ from datetime import datetime, timezone
 import requests
 from py_clob_client.client import ClobClient
 
-# from py_clob_client.clob_types import BookParams
-
-# client = ClobClient("https://clob.polymarket.com")  # read-only
-
-# markets_page = client.get_markets(next_cursor="")   # "" = first page
-# print(markets_page["data"][0])                      # first market object
-
-
-# token_id = "<token-id>"  # Get a token ID: https://docs.polymarket.com/developers/gamma-markets-api/get-markets
-
-# mid = client.get_midpoint(token_id)
-# price = client.get_price(token_id, side="BUY")
-# book = client.get_order_book(token_id)
-# books = client.get_order_books([BookParams(token_id=token_id)])
-# print(mid, price, book.market, len(books))
-
-
 import json
 
 def clean_json(obj):
@@ -84,7 +67,6 @@ class PolyMarketInfo:
         """
         doku https://docs.polymarket.com/developers/gamma-events-api/get-events
         """
-        print(kwargs)
         response = requests.get("https://gamma-api.polymarket.com/events", params=kwargs)
         if response.status_code != 200:
             return {"error": response.text}

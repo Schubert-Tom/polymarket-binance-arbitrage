@@ -9,27 +9,6 @@ from tradesystem.domain.order_book import OrderBook
 
 DateLike = Union[int, float, str, dt.date, dt.datetime, None]
 
-
-def _to_epoch_ms(x: DateLike) -> Optional[int]:
-    if x is None:
-        return None
-    if isinstance(x, (int, float)):
-        return int(x if x >= 1e12 else x * 1000)
-    if isinstance(x, str):
-        d = dt.datetime.strptime(x, "%Y-%m-%d")
-        return int(d.replace(tzinfo=dt.timezone.utc).timestamp() * 1000)
-    if isinstance(x, dt.datetime):
-        if x.tzinfo is None:
-            x = x.replace(tzinfo=dt.timezone.utc)
-        else:
-            x = x.astimezone(dt.timezone.utc)
-        return int(x.timestamp() * 1000)
-    if isinstance(x, dt.date):
-        d = dt.datetime(x.year, x.month, x.day, tzinfo=dt.timezone.utc)
-        return int(d.timestamp() * 1000)
-    return None
-
-
 class BinanceEOptionsClient:
     """
     Minimal, read-only client for Binance eOptions (no trading).
@@ -57,6 +36,26 @@ class BinanceEOptionsClient:
         self.s.headers.update({"User-Agent": user_agent})
 
     # ---------- low-level helpers ----------
+    
+    def _to_epoch_ms(self, x: DateLike) -> Optional[int]:
+        if x is None:
+            return None
+        if isinstance(x, (int, float)):
+            return int(x if x >= 1e12 else x * 1000)
+        if isinstance(x, str):
+            d = dt.datetime.strptime(x, "%Y-%m-%d")
+            return int(d.replace(tzinfo=dt.timezone.utc).timestamp() * 1000)
+        if isinstance(x, dt.datetime):
+            if x.tzinfo is None:
+                x = x.replace(tzinfo=dt.timezone.utc)
+            else:
+                x = x.astimezone(dt.timezone.utc)
+            return int(x.timestamp() * 1000)
+        if isinstance(x, dt.date):
+            d = dt.datetime(x.year, x.month, x.day, tzinfo=dt.timezone.utc)
+            return int(d.timestamp() * 1000)
+        return None
+
 
     def _get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
         """
@@ -123,7 +122,7 @@ class BinanceEOptionsClient:
         min_exp = max_exp = None
         if expiry_ms_range:
             a, b = expiry_ms_range
-            min_exp, max_exp = _to_epoch_ms(a), _to_epoch_ms(b)
+            min_exp, max_exp = self._to_epoch_ms(a), self._to_epoch_ms(b)
             if min_exp and max_exp and min_exp > max_exp:
                 raise ValueError("expiry_ms_range min must be <= max")
 
@@ -182,7 +181,7 @@ class BinanceEOptionsClient:
         def _one(sym: str) -> Optional[OrderBook]:
             try:
                 data = self.depth(sym, limit=limit)
-                return OrderBook(sym, data)
+                return data
             except Exception:
                 return None
 
