@@ -1,5 +1,8 @@
+from __future__ import annotations
 from typing import List, Tuple, Optional, Dict, Any
 from decimal import Decimal, getcontext
+import json
+import os
 
 # Optional: increase precision a bit for safer cumulative sums
 getcontext().prec = 28
@@ -117,3 +120,16 @@ class OrderBook:
     def __repr__(self):
         return (f"<OrderBook {self.symbol} | "
                 f"bid={self.best_bid()} ask={self.best_ask()} spread={self.spread()}>")
+
+
+    def to_json(self):
+        return {
+            "bids": self.bids,
+            "asks": self.asks,
+            "qty_step_size": self.qty_step_size,
+            "min_qty_to_purchase": self.min_qty_to_purchase,
+        }
+    
+    def save_order_book(self, prefix, dir):
+        with open(os.path.join(dir, f"{prefix}_order_book.json"), "w") as f:
+            json.dump(self.to_json(), f)
