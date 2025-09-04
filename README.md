@@ -1,4 +1,4 @@
-# Binance ↔️ Polymarket Arbitrage — *Put/Spot/Bet* (Hobby Project)
+# Binance ↔️ Polymarket Arbitrage — *Put/Spot/Bet*
 
 ![Status: Experimental](https://img.shields.io/badge/status-experimental-orange)
 ![Scope: Hobby Project](https://img.shields.io/badge/scope-hobby-blueviolet)
