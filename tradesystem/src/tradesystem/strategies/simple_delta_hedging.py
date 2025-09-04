@@ -26,16 +26,16 @@ class DeltaHedgeStrategy_NoFees:
     We go long on Binance and short on Polymarket.
     We only trade bitcoin on binance and keep the bet on polymarket until the market closes.
     """
-    def __init__(self, gain_when_bet_looses:float, capital_to_invest:float, cryptoSpotMarket:SpotMarket, polyMarketBetCryptoPrice:BetMarket):
+    def __init__(self, gain_when_bet_looses:float, capital_to_invest:float, cryptoSpotMarket:SpotMarket, polyMarketBet:BetMarket):
         self.gain_when_bet_looses = gain_when_bet_looses
         self.capital_to_invest = capital_to_invest
 
         assert isinstance(cryptoSpotMarket, SpotMarket), "cryptoSpotMarket must be a SpotMarket"
-        assert isinstance(polyMarketBetCryptoPrice, BetMarket), "polyMarketBetCryptoPrice must be a BetMarket"
-        assert polyMarketBetCryptoPrice.get_type() == BetOutcome.NO, "Betting outcome must be NO so we are in the money below strike"
+        assert isinstance(polyMarketBet, BetMarket), "polyMarketBet must be a BetMarket"
+        assert polyMarketBet.get_type() == BetOutcome.NO, "Betting outcome must be NO so we are in the money below strike"
 
         self.cryptoSpotMarket = cryptoSpotMarket
-        self.polyMarketBetCryptoPrice = polyMarketBetCryptoPrice
+        self.polyMarketBet = polyMarketBet
 
     def _calculate_invest_size_for_spot_and_bet(self, spotPrice, strike):
         """
@@ -90,7 +90,7 @@ class DeltaHedgeStrategy_NoFees:
         """
         currentSpotMarketPrice = self.cryptoSpotMarket.get_best_ask_price() # simple assumption market is liquid/our order is super small -> no price change in orderbook
         
-        strike = self.polyMarketBetCryptoPrice.get_strike_price()
+        strike = self.polyMarketBet.get_strike_price()
         if strike < currentSpotMarketPrice:
             raise ValueError(f"strike {strike} must be greater than currentSpotMarketPrice {currentSpotMarketPrice}")
         to_be_invested_in_bet, to_be_invested_in_spot = self._calculate_invest_size_for_spot_and_bet(currentSpotMarketPrice, strike)
@@ -98,7 +98,7 @@ class DeltaHedgeStrategy_NoFees:
         assert math.isclose(to_be_invested_in_bet + to_be_invested_in_spot, self.capital_to_invest, rel_tol=1e-5), "Invested capital is greater than available capital"
 
         print(f"Invested in bet: {to_be_invested_in_bet}, Invested in spot: {to_be_invested_in_spot}")
-        avgPrice, shares = self.polyMarketBetCryptoPrice.get_price_and_shares_for_instant_buy(to_be_invested_in_bet)
+        avgPrice, shares = self.polyMarketBet.get_price_and_shares_for_instant_buy(to_be_invested_in_bet)
         if shares is None:
             print("Too much capital needed for short hedge")
             return None

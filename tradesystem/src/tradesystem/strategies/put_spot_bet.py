@@ -39,24 +39,24 @@ class PutSpotBet_ArbitrageStrategy:
         * Binance put option markets assumes min_quantity of 0.01 contracts. This strategy does not consider that --> scaling to 0.01 steps might change fee structure
 
     """
-    def __init__(self, capital_to_invest:float, cryptoSpotMarket:SpotMarket, cryptoPutMarket:FutureMarket, polyMarketBetCryptoPrice:BetMarket, minrelativeGainWhenBetIsLost = 0.0):
+    def __init__(self, capital_to_invest:float, cryptoSpotMarket:SpotMarket, cryptoPutMarket:FutureMarket, polyMarketBet:BetMarket, minrelativeGainWhenBetIsLost = 0.0):
         self.capital_to_invest = capital_to_invest
         self.minrelativeGainWhenBetIsLost = minrelativeGainWhenBetIsLost
 
         assert isinstance(cryptoSpotMarket, SpotMarket), "cryptoSpotMarket must be a SpotMarket"
-        assert isinstance(polyMarketBetCryptoPrice, BetMarket), "polyMarketBetCryptoPrice must be a BetMarket"
+        assert isinstance(polyMarketBet, BetMarket), "polyMarketBet must be a BetMarket"
         assert isinstance(cryptoPutMarket, FutureMarket), "cryptoPutMarket must be a FutureMarket"
 
         # TODO: normally this must be true but if bet payout factor is >= 2 one could sell all at put strike and expect that in the time delta btc does not go up to poly strike
-        # print(polyMarketBetCryptoPrice.expirationDate, cryptoPutMarket.get_expiration_date())
-        # assert polyMarketBetCryptoPrice.expirationDate < cryptoPutMarket.get_expiration_date(), "Polymarket bet must expire before put market"
+        # print(polyMarketBet.expirationDate, cryptoPutMarket.get_expiration_date())
+        # assert polyMarketBet.expirationDate < cryptoPutMarket.get_expiration_date(), "Polymarket bet must expire before put market"
         assert cryptoSpotMarket.get_underlying_currency() == cryptoPutMarket.get_underlying_currency(), f"Both markets must have the same underlying currency, got {cryptoSpotMarket.get_underlying_currency()} and {cryptoPutMarket.get_underlying_currency()}"
 
         # TODO polymarket shares are in USD
-        # polyMarketBetCryptoPrice.get_underlying_currency()
+        # polyMarketBet.get_underlying_currency()
 
         self.cryptoSpotMarket = cryptoSpotMarket
-        self.polyMarketBetCryptoPrice = polyMarketBetCryptoPrice
+        self.polyMarketBet = polyMarketBet
         self.cryptoPutMarket = cryptoPutMarket
 
     def _allocate_consider_liquidity_no_fees(self, spotPrice, bet_strike, put_strike):
@@ -114,7 +114,7 @@ class PutSpotBet_ArbitrageStrategy:
                 continue
             if to_be_invested_in_bet <= 0 or to_be_invested_in_spot <= 0:
                 continue
-            bet_price_avg, bet_shares = self.polyMarketBetCryptoPrice.get_price_and_shares_for_instant_buy(to_be_invested_in_bet)
+            bet_price_avg, bet_shares = self.polyMarketBet.get_price_and_shares_for_instant_buy(to_be_invested_in_bet)
             put_price_avg, put_shares = self.cryptoPutMarket.get_price_and_shares_for_instant_buy(to_be_invested_in_put)
 
             if put_shares is None:
@@ -144,12 +144,12 @@ class PutSpotBet_ArbitrageStrategy:
         returns array of same shape as spot_prices with relative profit values for every bitcoin value
         """
         currentSpotMarketPrice = self.cryptoSpotMarket.get_best_ask_price() # assume market is liquid and we do not move the market with our buy
-        strike_poly = self.polyMarketBetCryptoPrice.get_strike_price()
+        strike_poly = self.polyMarketBet.get_strike_price()
         strike_put = self.cryptoPutMarket.get_strike_price()
 
         to_be_invested_in_bet, to_be_invested_in_spot, to_be_invested_in_put = self._allocate_consider_liquidity_no_fees(currentSpotMarketPrice, strike_poly, strike_put)
 
-        avgBetPrice, shares = self.polyMarketBetCryptoPrice.get_price_and_shares_for_instant_buy(to_be_invested_in_bet)
+        avgBetPrice, shares = self.polyMarketBet.get_price_and_shares_for_instant_buy(to_be_invested_in_bet)
         avgPutPrice, put_shares = self.cryptoPutMarket.get_price_and_shares_for_instant_buy(to_be_invested_in_put)
 
         bet_value_if_won = shares if shares else 0 # shares resolve to 1$
@@ -192,7 +192,7 @@ class PutSpotBet_ArbitrageStrategy:
         calulation_results["to_be_invested_in_spot"] = to_be_invested_in_spot
         calulation_results["to_be_invested_in_put"] = to_be_invested_in_put
         calulation_results["cryptoPutMarket"] = self.cryptoPutMarket
-        calulation_results["polyMarketBetCryptoPrice"] = self.polyMarketBetCryptoPrice
+        calulation_results["polyMarketBet"] = self.polyMarketBet
         calulation_results["cryptoSpotMarket"] = self.cryptoSpotMarket
         calulation_results["capital_invested"] = self.capital_to_invest
         calulation_results["bet_value_if_won"] = bet_value_if_won
