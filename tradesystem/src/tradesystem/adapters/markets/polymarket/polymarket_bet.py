@@ -40,7 +40,7 @@ class PolyMarketBet_Crypto_Price_Bet(BetMarket):
         return self.outcome
     
     def createOrderBook(self):
-        return OrderBook(self._currency, self.orderPriceMinTickSize, min_qty_to_purchase=self.orderMinSize)
+        return OrderBook(self._currency, float(self.orderPriceMinTickSize), min_qty_to_purchase=float(self.orderMinSize))
 
     @classmethod
     def yes_and_now_from_api_market_dict(cls,

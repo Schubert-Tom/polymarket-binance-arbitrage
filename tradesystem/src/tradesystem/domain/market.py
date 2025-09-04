@@ -66,7 +66,14 @@ class MarketInterface(ABC):
         Get the price and shares for an instant buy order.
         """
         order_book = self.get_order_book()
-        return order_book.calculate_instant_buy_price_and_size(amount_of_money)
+        return order_book.calculate_instant_buy_price_and_size(amount_of_money, order_type)
+
+    def get_price_for_instant_buy_shares(self, shares: float) -> float:
+        """
+        Get the price for an instant buy order based on the number of shares.
+        """
+        order_book = self.get_order_book()
+        return order_book.get_price_for_instant_buy_shares(shares)
 
 class FutureType(enum.Enum):
     CALL = "CALL"

@@ -14,8 +14,8 @@ class OrderBook:
 
     def __init__(self, quantity_currency, qty_step_size:float, min_qty_to_purchase: float):
         self.quantity_currency = quantity_currency
-        self.qty_step_size = qty_step_size
-        self.min_qty_to_purchase = min_qty_to_purchase
+        self.qty_step_size = float(qty_step_size)
+        self.min_qty_to_purchase = float(min_qty_to_purchase)
 
     def updateData(self, data: Dict[str, Any], qty_step_size: float = None, min_qty_to_purchase: float = None):
         # Binance returns price/qty as strings, convert to floats
@@ -28,10 +28,10 @@ class OrderBook:
             key=lambda x: x[0]   # lowest first
         )
         if qty_step_size is not None:
-            self.qty_step_size = qty_step_size
+            self.qty_step_size = float(qty_step_size)
 
         if min_qty_to_purchase is not None:
-            self.min_qty_to_purchase = min_qty_to_purchase
+            self.min_qty_to_purchase = float(min_qty_to_purchase)
 
     def best_bid(self) -> Optional[Tuple[float, float]]:
         """Return (price, qty) of best bid or None if empty."""
@@ -60,6 +60,12 @@ class OrderBook:
 
     def ask(self, i: int) -> Optional[Tuple[float, float]]:
         return self.asks[i] if 0 <= i < len(self.asks) else None
+    
+    def get_min_qty_to_purchase(self) -> float:
+        return self.min_qty_to_purchase
+    
+    def get_min_qty_step_size(self) -> float:
+        return self.qty_step_size
 
     def calculate_instant_buy_price_and_size(
         self,
@@ -116,6 +122,50 @@ class OrderBook:
 
         avg_price = (total_cost / total_size)
         return float(avg_price), float(total_size)
+    
+    def get_price_for_instant_buy_shares(self, shares: float) -> Optional[float]:
+        """
+        Calculate the total cost to buy a given number of shares instantly.
+
+        shares: number of shares to buy in base currency (e.g., BTC).
+        Returns total cost in quote currency (e.g., USDT) or None if not fillable.
+        """
+        if shares is None:
+            return None
+        try:
+            remaining = Decimal(str(shares))
+        except Exception:
+            return None
+
+        if remaining <= 0 or not self.asks:
+            return None
+
+        total_cost = Decimal("0")
+        total_size = Decimal("0")
+
+        # self.asks already sorted from lowest price to highest
+        for price_f, size_f in self.asks:
+            price = Decimal(str(price_f))
+            size_avail = Decimal(str(size_f))
+
+            take_size = min(remaining, size_avail)
+
+            if take_size > 0:
+                total_cost += take_size * price
+                total_size += take_size
+                remaining -= take_size
+
+            if remaining <= 0:
+                break
+
+        if remaining > 0:
+            return None
+
+        if total_size == 0:
+            return None
+
+        return float(total_cost)
+    
 
     def __repr__(self):
         return (f"<OrderBook {self.symbol} | "
@@ -133,3 +183,8 @@ class OrderBook:
     def save_order_book(self, prefix, dir):
         with open(os.path.join(dir, f"{prefix}_order_book.json"), "w") as f:
             json.dump(self.to_json(), f)
+
+
+
+class SmoothOrderBook:
+     pass
