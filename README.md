@@ -114,6 +114,7 @@ git clone https://github.com/Schubert-Tom/polymarket-binance-arbitrage.git
 cd polymarket-binance-arbitrage
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+pip install -e tradesystem/
 ```
 ---
 
